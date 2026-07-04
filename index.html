@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="gymlog">
+<meta name="theme-color" content="#FFC700">
+<title>gymlog</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<style>
+  :root{
+    --bg:#EFEFF0;
+    --paper:#FFFFFF;
+    --ink:#1A1A1A;
+    --muted:#9A9A9A;
+    --hairline:#E7E7E7;
+    --yellow:#FFC700;
+    --amber:#F5A800;
+    --checkbox:#FAF0C4;
+    --head:'Oswald','Arial Narrow',sans-serif;
+    --item:'Lora',Georgia,serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{background:var(--bg);overscroll-behavior:none;}
+  #root{height:100%;}
+
+  .app{height:100%;display:flex;flex-direction:column;background:var(--bg);}
+
+  /* ---------- header ---------- */
+  .screen-head{
+    padding:calc(14px + env(safe-area-inset-top)) 22px 10px;
+    display:flex;align-items:flex-start;justify-content:space-between;flex:0 0 auto;
+  }
+  .screen-head h1{
+    font-family:var(--head);font-weight:700;text-transform:uppercase;
+    font-size:27px;letter-spacing:-0.5px;line-height:1.05;color:var(--ink);
+  }
+  .screen-head .session{
+    font-family:var(--head);font-weight:600;text-transform:uppercase;
+    font-size:12px;letter-spacing:2px;color:var(--muted);margin-top:4px;
+  }
+  .backbtn{
+    font-family:var(--head);font-weight:700;font-size:22px;color:var(--ink);
+    background:none;border:none;padding:2px 12px 2px 0;line-height:1;
+  }
+  .headrow{display:flex;align-items:baseline;}
+
+  /* ---------- ruled paper list ---------- */
+  .paper{
+    flex:1;background:var(--paper);overflow-y:auto;-webkit-overflow-scrolling:touch;
+    background-image:repeating-linear-gradient(to bottom,transparent 0 51px,var(--hairline) 51px 52px);
+    background-attachment:local;
+  }
+  .paper.noline{background-image:none;}
+  .rowline{
+    height:52px;display:flex;align-items:center;gap:12px;padding:0 22px;
+  }
+  .rowline .box{
+    width:24px;height:24px;border-radius:7px;background:var(--checkbox);
+    flex:0 0 auto;border:none;position:relative;
+  }
+  .rowline.done .box::after{
+    content:'\2713';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-family:var(--head);font-weight:700;font-size:16px;color:var(--ink);
+  }
+  .rowline .txt{
+    font-family:var(--item);font-size:16px;color:var(--ink);flex:1;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left;
+    background:none;border:none;height:100%;display:flex;align-items:center;
+  }
+  .rowline .retry{
+    font-family:var(--head);font-weight:600;font-size:10px;letter-spacing:1px;
+    text-transform:uppercase;color:#C0392B;background:none;border:none;
+  }
+  .sect{height:52px;display:flex;align-items:flex-end;padding:0 22px 6px;}
+  .sect span{
+    font-family:var(--head);font-weight:600;text-transform:uppercase;
+    font-size:11px;letter-spacing:2.5px;color:var(--muted);
+  }
+  .refrow{
+    padding:9px 22px 7px;min-height:52px;display:flex;flex-direction:column;
+    justify-content:center;border-bottom:1px solid var(--hairline);
+    background:none;border-left:none;border-right:none;border-top:none;width:100%;text-align:left;
+  }
+  .refrow .nm{font-family:var(--item);font-size:15px;color:var(--ink);}
+  .refrow .rx{
+    font-family:var(--head);font-weight:500;font-size:11px;letter-spacing:0.6px;
+    text-transform:uppercase;color:var(--muted);margin-top:2px;
+  }
+
+  /* ---------- someday landing ---------- */
+  .biglinks{padding:44px 22px;flex:1;}
+  .biglinks button{
+    display:block;font-family:var(--head);font-weight:700;text-transform:uppercase;
+    font-size:34px;letter-spacing:-0.5px;color:var(--ink);background:none;border:none;
+    margin-bottom:26px;padding:0;text-align:left;
+  }
+
+  /* ---------- day strip ---------- */
+  .daystrip{
+    flex:0 0 auto;background:var(--yellow);display:flex;align-items:center;
+    padding:12px 6px 10px;overflow-x:auto;-webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+  }
+  .daystrip::-webkit-scrollbar{display:none;}
+  .day{
+    flex:0 0 64px;text-align:center;background:none;border:none;padding:0;
+  }
+  .day .num{font-family:var(--head);font-weight:600;font-size:11px;color:var(--ink);}
+  .day .name{font-family:var(--head);font-weight:700;font-size:15px;text-transform:uppercase;color:var(--ink);}
+  .day .pill{padding:4px 0;}
+  .day.active .pill{
+    background:var(--ink);border-radius:50%;width:48px;height:48px;margin:0 auto;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+  }
+  .day.active .num,.day.active .name{color:#fff;}
+
+  /* ---------- bottom bar ---------- */
+  .bottombar{
+    flex:0 0 auto;background:var(--amber);display:flex;align-items:center;
+    justify-content:space-between;padding:14px 22px calc(14px + env(safe-area-inset-bottom));
+  }
+  .bottombar.solo{background:var(--yellow);}
+  .bottombar button{
+    font-family:var(--head);font-weight:700;text-transform:uppercase;
+    font-size:19px;letter-spacing:-0.3px;color:var(--ink);position:relative;
+    background:none;border:none;padding:0;
+  }
+  .bottombar .plus{font-size:26px;font-weight:600;width:44px;}
+  .bottombar button.active::after{
+    content:'';position:absolute;left:50%;transform:translateX(-50%);
+    bottom:-9px;width:5px;height:5px;border-radius:50%;background:var(--ink);
+  }
+
+  /* ---------- bottom sheet ---------- */
+  .scrim{position:fixed;inset:0;background:rgba(0,0,0,0.28);z-index:10;border:none;}
+  .sheet{
+    position:fixed;left:0;right:0;bottom:0;background:var(--paper);z-index:11;
+    border-radius:22px 22px 0 0;padding:20px 22px calc(26px + env(safe-area-inset-bottom));
+    max-height:82%;overflow-y:auto;box-shadow:0 -8px 28px rgba(0,0,0,0.22);
+  }
+  .sheet .grab{width:38px;height:4px;border-radius:2px;background:#D8D8D8;margin:0 auto 16px;}
+  .sheet h2{
+    font-family:var(--head);font-weight:700;text-transform:uppercase;
+    font-size:21px;letter-spacing:-0.3px;color:var(--ink);line-height:1.1;margin-bottom:6px;
+  }
+  .sheet .lbl{
+    font-family:var(--head);font-weight:600;text-transform:uppercase;
+    font-size:10.5px;letter-spacing:2.5px;color:var(--amber);margin:14px 0 5px;
+  }
+  .sheet p{font-family:var(--item);font-size:14px;line-height:1.5;color:var(--ink);white-space:pre-wrap;}
+  .sheet .notes{color:#3A3A3A;}
+  .sheet .notes.clamped{
+    display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;
+  }
+  .sheet .more{
+    font-family:var(--head);font-weight:600;font-size:11px;letter-spacing:1.5px;
+    text-transform:uppercase;color:var(--muted);margin-top:5px;background:none;border:none;padding:0;
+  }
+  .sheet textarea{
+    width:100%;border:1.5px solid var(--hairline);border-radius:12px;padding:12px 14px;
+    font-family:var(--item);font-size:16px;color:var(--ink);min-height:72px;margin-top:4px;
+    background:#FCFCFC;resize:vertical;outline:none;
+  }
+  .sheet textarea:focus{border-color:var(--amber);}
+  .donebtn{
+    width:100%;margin-top:18px;background:var(--yellow);border:none;border-radius:14px;height:52px;
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--head);font-weight:700;font-size:17px;letter-spacing:1px;
+    text-transform:uppercase;color:var(--ink);
+  }
+  .donebtn:disabled{opacity:.5;}
+  .deletelink{
+    display:block;width:100%;margin-top:14px;background:none;border:none;text-align:center;
+    font-family:var(--head);font-weight:600;font-size:12px;letter-spacing:1.5px;
+    text-transform:uppercase;color:#C0392B;
+  }
+
+  /* ---------- picker (ad-hoc add) ---------- */
+  .picker-search{
+    width:100%;border:1.5px solid var(--hairline);border-radius:12px;padding:12px 14px;
+    font-family:var(--item);font-size:16px;background:#FCFCFC;outline:none;margin-bottom:8px;
+  }
+  .picker-list{max-height:40vh;overflow-y:auto;}
+  .picker-row{
+    display:block;width:100%;text-align:left;background:none;border:none;
+    border-bottom:1px solid var(--hairline);padding:13px 4px;
+    font-family:var(--item);font-size:15px;color:var(--ink);
+  }
+
+  /* ---------- misc ---------- */
+  .banner{
+    flex:0 0 auto;background:#C0392B;color:#fff;text-align:center;
+    font-family:var(--head);font-weight:600;font-size:12px;letter-spacing:1px;
+    text-transform:uppercase;padding:7px 12px;
+  }
+  .loading{
+    flex:1;display:flex;align-items:center;justify-content:center;
+    font-family:var(--head);font-weight:600;text-transform:uppercase;
+    letter-spacing:2px;color:var(--muted);font-size:13px;background:var(--paper);
+  }
+  .setup{
+    height:100%;display:flex;flex-direction:column;align-items:flex-start;
+    justify-content:center;padding:40px;gap:14px;
+  }
+  .setup h1{font-family:var(--head);font-weight:700;text-transform:uppercase;font-size:30px;}
+  .setup p{font-family:var(--item);font-size:15px;line-height:1.6;color:#3A3A3A;}
+  .setup code{background:#fff;padding:2px 6px;border-radius:4px;font-size:13px;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+/* =====================================================================
+   gymlog — TeuxDeux-style gym tracker backed by the "Training" Airtable base
+   ===================================================================== */
+
+// ── CONFIG ───────────────────────────────────────────────────────────
+// The Airtable PAT is never committed. It's entered once on first launch
+// and kept in this browser's local storage on the device only.
+const TOKEN_KEY = "gymlog_token";
+let TOKEN = "";
+const BASE_ID = "appmqPkBzBzcKlrce";
+
+const TABLES = { exercises: "Exercises", schedule: "Schedule", logs: "Logs", races: "Races" };
+const SECTION_ORDER = ["Warm-Up", "Main Session", "Finisher", "Recovery"];
+const SESSION_NAMES = {
+  Monday: "Iron Roots", Tuesday: "Hill Tax", Wednesday: "The Forge",
+  Thursday: "The Loaded Mile", Friday: "The Staircase Chase",
+  Saturday: "The Crucible", Sunday: "Quiet Time"
+};
+const WEEKDAYS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+
+const { useState, useEffect, useMemo, useRef, useCallback } = React;
+
+// ── Airtable helpers ─────────────────────────────────────────────────
+const atUrl = (table, params) => {
+  const q = params ? "?" + new URLSearchParams(params).toString() : "";
+  return `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(table)}${q}`;
+};
+const atHeaders = () => ({ Authorization: `Bearer ${TOKEN}`, "Content-Type": "application/json" });
+const atError = (msg, status) => { const e = new Error(msg); e.status = status; return e; };
+
+async function atFetchAll(table, params = {}) {
+  let records = [], offset;
+  do {
+    const p = { pageSize: "100", ...params };
+    if (offset) p.offset = offset;
+    const res = await fetch(atUrl(table, p), { headers: atHeaders() });
+    if (!res.ok) throw atError(`Airtable ${table}: ${res.status}`, res.status);
+    const data = await res.json();
+    records = records.concat(data.records);
+    offset = data.offset;
+  } while (offset);
+  return records;
+}
+async function atCreate(table, fields) {
+  const res = await fetch(atUrl(table), { method: "POST", headers: atHeaders(), body: JSON.stringify({ fields }) });
+  if (!res.ok) throw atError(`create failed: ${res.status}`, res.status);
+  return (await res.json());
+}
+async function atUpdate(table, id, fields) {
+  const res = await fetch(atUrl(table) + "/" + id, { method: "PATCH", headers: atHeaders(), body: JSON.stringify({ fields }) });
+  if (!res.ok) throw atError(`update failed: ${res.status}`, res.status);
+  return (await res.json());
+}
+async function atDelete(table, id) {
+  const res = await fetch(atUrl(table) + "/" + id, { method: "DELETE", headers: atHeaders() });
+  if (!res.ok) throw atError(`delete failed: ${res.status}`, res.status);
+}
+
+// ── date helpers (local timezone) ────────────────────────────────────
+const iso = d => {
+  const p = n => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+};
+const fromIso = s => { const [y,m,dd] = s.split("-").map(Number); return new Date(y, m-1, dd); };
+const addDays = (s, n) => { const d = fromIso(s); d.setDate(d.getDate()+n); return iso(d); };
+const todayIso = () => iso(new Date());
+const weekdayOf = s => WEEKDAYS[fromIso(s).getDay()];
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const headerDate = s => { const d = fromIso(s); return `${WEEKDAYS[d.getDay()]}, ${MONTHS[d.getMonth()]} ${d.getDate()}`; };
+const chipDate = s => { const d = fromIso(s); return `${d.getMonth()+1}/${d.getDate()}`; };
+
+// pick the first present field among candidate names (used for Races,
+// whose exact field names aren't guaranteed)
+const pick = (fields, names) => { for (const n of names) if (fields[n] !== undefined && fields[n] !== "") return fields[n]; return undefined; };
+
+// ── App ──────────────────────────────────────────────────────────────
+function App() {
+  const [token, setTokenState] = useState(() => {
+    try { return localStorage.getItem(TOKEN_KEY) || ""; } catch (e) { return ""; }
+  });
+  TOKEN = token;
+  const saveToken = t => {
+    try { localStorage.setItem(TOKEN_KEY, t); } catch (e) {}
+    setTokenState(t);
+  };
+  const clearToken = () => {
+    try { localStorage.removeItem(TOKEN_KEY); } catch (e) {}
+    setTokenState("");
+  };
+  // if the token is revoked/wrong, drop back to setup instead of erroring forever
+  const authGuard = e => {
+    if (e && (e.status === 401 || e.status === 403)) { clearToken(); return true; }
+    return false;
+  };
+
+  // navigation: {name:'day'} | {name:'someday'} | {name:'exercises'} |
+  //             {name:'workouts'} | {name:'workout', day} | {name:'races'}
+  const [nav, setNav] = useState({ name: "day" });
+  const [date, setDate] = useState(todayIso());
+
+  const [exercises, setExercises] = useState(null);   // {id: {name, notes}}
+  const [schedule, setSchedule] = useState(null);      // [{id, day, order, section, exerciseId, prescription}]
+  const [logsByDate, setLogsByDate] = useState({});    // {iso: {exerciseId: logRecord}}
+  const [races, setRaces] = useState(null);
+  const [error, setError] = useState(null);
+  const [sheet, setSheet] = useState(null);            // {exerciseId, prescription}
+  const [picker, setPicker] = useState(false);
+
+  // initial load: exercises + schedule
+  useEffect(() => {
+    if (!token) return;
+    (async () => {
+      try {
+        const [exRecs, schRecs] = await Promise.all([
+          atFetchAll(TABLES.exercises),
+          atFetchAll(TABLES.schedule),
+        ]);
+        const ex = {};
+        exRecs.forEach(r => { ex[r.id] = { name: r.fields["Name"] || "(unnamed)", notes: r.fields["Coaching Notes"] || "" }; });
+        setExercises(ex);
+        setSchedule(schRecs.map(r => ({
+          id: r.id,
+          day: (r.fields["Day of Week"] || "").trim(),
+          order: Number(r.fields["Order"]) || 0,
+          section: r.fields["Section"] || "Main Session",
+          exerciseId: Array.isArray(r.fields["Exercise"]) ? r.fields["Exercise"][0] : null,
+          prescription: r.fields["Prescription"] || "",
+        })));
+      } catch (e) {
+        if (authGuard(e)) return;
+        setError("Couldn't reach Airtable — check connection.");
+      }
+    })();
+  }, [token]);
+
+  // logs for the visible date
+  const loadLogs = useCallback(async (d) => {
+    if (!TOKEN) return;
+    try {
+      const recs = await atFetchAll(TABLES.logs, {
+        filterByFormula: `IS_SAME({Log Date}, '${d}', 'day')`,
+      });
+      const map = {};
+      recs.forEach(r => {
+        const exId = Array.isArray(r.fields["Exercise"]) ? r.fields["Exercise"][0] : null;
+        if (exId && !map[exId]) map[exId] = { id: r.id, text: r.fields["Log Text"] || "" };
+      });
+      setLogsByDate(prev => ({ ...prev, [d]: map }));
+    } catch (e) {
+      if (authGuard(e)) return;
+      setError("Couldn't load logs — showing plan only.");
+    }
+  }, []);
+  useEffect(() => { if (token && logsByDate[date] === undefined) loadLogs(date); }, [date, token, loadLogs]);
+
+  // races (lazy, on first open)
+  const openRaces = async () => {
+    setNav({ name: "races" });
+    if (races !== null) return;
+    try {
+      const recs = await atFetchAll(TABLES.races);
+      setRaces(recs.map(r => ({
+        name: pick(r.fields, ["Name","Race","Race Name","Title"]) || "(unnamed)",
+        date: pick(r.fields, ["Date","Race Date"]),
+        place: pick(r.fields, ["City/State","Location","City","Place"]),
+        status: pick(r.fields, ["Status"]),
+        miles: pick(r.fields, ["Mi","Miles","Distance"]),
+      })));
+    } catch (e) {
+      if (authGuard(e)) return;
+      setError("Couldn't load races."); setRaces([]);
+    }
+  };
+
+  // day template + ad-hoc extras
+  const dayLogs = logsByDate[date] || {};
+  const template = useMemo(() => {
+    if (!schedule) return [];
+    const wd = weekdayOf(date);
+    return schedule
+      .filter(s => s.day.toLowerCase().startsWith(wd.slice(0,3).toLowerCase()) && s.exerciseId)
+      .sort((a,b) => a.order - b.order);
+  }, [schedule, date]);
+
+  const grouped = useMemo(() => {
+    const bySection = {};
+    template.forEach(t => { (bySection[t.section] = bySection[t.section] || []).push(t); });
+    const templateIds = new Set(template.map(t => t.exerciseId));
+    const adhoc = Object.keys(dayLogs).filter(id => !templateIds.has(id))
+      .map(id => ({ id: "adhoc-"+id, exerciseId: id, prescription: "", section: "Ad-Hoc" }));
+    const sections = SECTION_ORDER.filter(s => bySection[s]).map(s => [s, bySection[s]]);
+    Object.keys(bySection).forEach(s => { if (!SECTION_ORDER.includes(s)) sections.push([s, bySection[s]]); });
+    if (adhoc.length) sections.push(["Ad-Hoc", adhoc]);
+    return sections;
+  }, [template, dayLogs]);
+
+  // ── log writes ──
+  const writeLog = async (exerciseId, text) => {
+    const existing = dayLogs[exerciseId];
+    const optimistic = { id: existing ? existing.id : "pending", text };
+    setLogsByDate(p => ({ ...p, [date]: { ...p[date], [exerciseId]: optimistic } }));
+    try {
+      if (existing && existing.id !== "pending") {
+        await atUpdate(TABLES.logs, existing.id, { "Log Text": text });
+      } else {
+        const rec = await atCreate(TABLES.logs, { "Exercise": [exerciseId], "Log Date": date, "Log Text": text });
+        setLogsByDate(p => ({ ...p, [date]: { ...p[date], [exerciseId]: { id: rec.id, text } } }));
+      }
+    } catch (e) {
+      setLogsByDate(p => { const c = { ...p[date] }; if (!existing) delete c[exerciseId]; else c[exerciseId] = existing; return { ...p, [date]: c }; });
+      if (authGuard(e)) return;
+      setError("Log didn't save — tap the row to retry.");
+      setTimeout(() => setError(null), 4000);
+    }
+  };
+  const removeLog = async (exerciseId) => {
+    const existing = dayLogs[exerciseId];
+    if (!existing) return;
+    setLogsByDate(p => { const c = { ...p[date] }; delete c[exerciseId]; return { ...p, [date]: c }; });
+    try { if (existing.id !== "pending") await atDelete(TABLES.logs, existing.id); }
+    catch (e) {
+      setLogsByDate(p => ({ ...p, [date]: { ...p[date], [exerciseId]: existing } }));
+      if (authGuard(e)) return;
+      setError("Couldn't remove — try again."); setTimeout(() => setError(null), 4000);
+    }
+  };
+  const toggleQuick = (exerciseId) => dayLogs[exerciseId] ? removeLog(exerciseId) : writeLog(exerciseId, "Completed");
+
+  // ── swipe between days ──
+  const touch = useRef(null);
+  const onTouchStart = e => { touch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }; };
+  const onTouchEnd = e => {
+    if (!touch.current) return;
+    const dx = e.changedTouches[0].clientX - touch.current.x;
+    const dy = e.changedTouches[0].clientY - touch.current.y;
+    touch.current = null;
+    if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.5) setDate(d => addDays(d, dx < 0 ? 1 : -1));
+  };
+
+  const goToday = () => { setDate(todayIso()); setNav({ name: "day" }); setSheet(null); setPicker(false); };
+  const loadingCore = !exercises || !schedule;
+
+  if (!token) return <Setup onSave={saveToken} />;
+
+  // ── screens ──
+  let screen = null;
+
+  if (nav.name === "day") {
+    screen = (
+      <React.Fragment>
+        <div className="screen-head">
+          <div>
+            <h1>{headerDate(date)}</h1>
+            <div className="session">{SESSION_NAMES[weekdayOf(date)]}</div>
+          </div>
+        </div>
+        {loadingCore ? <div className="loading">Loading plan…</div> : (
+          <div className="paper" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+            {grouped.map(([section, items]) => (
+              <React.Fragment key={section}>
+                <div className="sect"><span>{section}</span></div>
+                {items.map(it => {
+                  const done = !!dayLogs[it.exerciseId];
+                  const ex = exercises[it.exerciseId] || { name: "(unknown exercise)" };
+                  return (
+                    <div className={"rowline" + (done ? " done" : "")} key={it.id}>
+                      <button className="box" aria-label={done ? "Mark not done" : "Mark done"}
+                        onClick={() => toggleQuick(it.exerciseId)} />
+                      <button className="txt" onClick={() => setSheet({ exerciseId: it.exerciseId, prescription: it.prescription })}>
+                        {ex.name}
+                      </button>
+                    </div>
+                  );
+                })}
+              </React.Fragment>
+            ))}
+            <div style={{height: "40vh"}} />
+          </div>
+        )}
+        <DayStrip date={date} setDate={setDate} />
+      </React.Fragment>
+    );
+  }
+
+  if (nav.name === "someday") {
+    screen = (
+      <React.Fragment>
+        <div className="biglinks">
+          <button onClick={() => setNav({ name: "exercises" })}>Exercises</button>
+          <button onClick={() => setNav({ name: "workouts" })}>Workouts</button>
+          <button onClick={openRaces}>Races</button>
+        </div>
+      </React.Fragment>
+    );
+  }
+
+  if (nav.name === "exercises") {
+    const list = exercises ? Object.entries(exercises).sort((a,b) => a[1].name.localeCompare(b[1].name)) : [];
+    screen = (
+      <React.Fragment>
+        <SubHeader title="Exercises" onBack={() => setNav({ name: "someday" })} />
+        {loadingCore ? <div className="loading">Loading…</div> : (
+          <div className="paper noline">
+            {list.map(([id, ex]) => (
+              <button className="refrow" key={id} onClick={() => setSheet({ exerciseId: id, prescription: null })}>
+                <div className="nm">{ex.name}</div>
+              </button>
+            ))}
+          </div>
+        )}
+      </React.Fragment>
+    );
+  }
+
+  if (nav.name === "workouts") {
+    screen = (
+      <React.Fragment>
+        <SubHeader title="Workouts" onBack={() => setNav({ name: "someday" })} />
+        <div className="paper noline">
+          {WEEKDAYS.slice(1).concat(WEEKDAYS[0]).map(d => (
+            <button className="refrow" key={d} onClick={() => setNav({ name: "workout", day: d })}>
+              <div className="nm">{SESSION_NAMES[d]}</div>
+              <div className="rx">{d}</div>
+            </button>
+          ))}
+        </div>
+      </React.Fragment>
+    );
+  }
+
+  if (nav.name === "workout") {
+    const items = (schedule || [])
+      .filter(s => s.day.toLowerCase().startsWith(nav.day.slice(0,3).toLowerCase()) && s.exerciseId)
+      .sort((a,b) => a.order - b.order);
+    const bySection = {};
+    items.forEach(t => { (bySection[t.section] = bySection[t.section] || []).push(t); });
+    const sections = SECTION_ORDER.filter(s => bySection[s]).map(s => [s, bySection[s]]);
+    Object.keys(bySection).forEach(s => { if (!SECTION_ORDER.includes(s)) sections.push([s, bySection[s]]); });
+    screen = (
+      <React.Fragment>
+        <SubHeader title={SESSION_NAMES[nav.day]} sub={nav.day} onBack={() => setNav({ name: "workouts" })} />
+        <div className="paper noline">
+          {sections.map(([section, its]) => (
+            <React.Fragment key={section}>
+              <div className="sect"><span>{section}</span></div>
+              {its.map(it => (
+                <button className="refrow" key={it.id} onClick={() => setSheet({ exerciseId: it.exerciseId, prescription: it.prescription, readOnly: true })}>
+                  <div className="nm">{(exercises[it.exerciseId] || {}).name}</div>
+                  {it.prescription ? <div className="rx">{it.prescription}</div> : null}
+                </button>
+              ))}
+            </React.Fragment>
+          ))}
+        </div>
+      </React.Fragment>
+    );
+  }
+
+  if (nav.name === "races") {
+    const t = todayIso();
+    const sorted = (races || []).slice().sort((a,b) => (a.date||"9999").localeCompare(b.date||"9999"));
+    const upcoming = sorted.filter(r => (r.date||"") >= t);
+    const past = sorted.filter(r => (r.date||"") < t).reverse();
+    const fmt = r => [
+      r.date ? headerDateShort(r.date) : null, r.place, r.status
+    ].filter(Boolean).join(" · ");
+    screen = (
+      <React.Fragment>
+        <SubHeader title="Races" onBack={() => setNav({ name: "someday" })} />
+        {races === null ? <div className="loading">Loading…</div> : (
+          <div className="paper noline">
+            {upcoming.length ? <div className="sect"><span>Upcoming</span></div> : null}
+            {upcoming.map((r,i) => (
+              <div className="refrow" key={"u"+i}>
+                <div className="nm">{r.name}</div>
+                <div className="rx">{fmt(r)}</div>
+              </div>
+            ))}
+            {past.length ? <div className="sect"><span>Past</span></div> : null}
+            {past.map((r,i) => (
+              <div className="refrow" key={"p"+i}>
+                <div className="nm">{r.name}</div>
+                <div className="rx">{fmt(r)}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </React.Fragment>
+    );
+  }
+
+  const onSomedayTab = nav.name !== "day";
+
+  return (
+    <div className="app">
+      {error ? <div className="banner">{error}</div> : null}
+      {screen}
+      <div className={"bottombar" + (nav.name === "day" ? "" : " solo")}>
+        <button className={nav.name === "day" ? "active" : ""} onClick={goToday}>Today</button>
+        {nav.name === "day"
+          ? <button className="plus" onClick={() => setPicker(true)} aria-label="Add exercise">+</button>
+          : <span style={{width:44}} />}
+        <button className={onSomedayTab ? "active" : ""} onClick={() => { setNav({ name: "someday" }); setSheet(null); setPicker(false); }}>Someday</button>
+      </div>
+
+      {sheet && exercises ? (
+        <LogSheet
+          exercise={exercises[sheet.exerciseId]}
+          prescription={sheet.prescription}
+          readOnly={!!sheet.readOnly || nav.name === "exercises"}
+          existing={(logsByDate[date] || {})[sheet.exerciseId]}
+          onClose={() => setSheet(null)}
+          onDone={text => { writeLog(sheet.exerciseId, text || "Completed"); setSheet(null); }}
+          onDelete={() => { removeLog(sheet.exerciseId); setSheet(null); }}
+        />
+      ) : null}
+
+      {picker && exercises ? (
+        <ExercisePicker
+          exercises={exercises}
+          onClose={() => setPicker(false)}
+          onPick={id => { setPicker(false); setSheet({ exerciseId: id, prescription: "" }); }}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+const headerDateShort = s => { const d = fromIso(s); return `${MONTHS[d.getMonth()].slice(0,3)} ${d.getDate()}${d.getFullYear() !== new Date().getFullYear() ? ", " + d.getFullYear() : ""}`; };
+
+function SubHeader({ title, sub, onBack }) {
+  return (
+    <div className="screen-head">
+      <div className="headrow">
+        <button className="backbtn" onClick={onBack} aria-label="Back">‹</button>
+        <div>
+          <h1>{title}</h1>
+          {sub ? <div className="session">{sub}</div> : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DayStrip({ date, setDate }) {
+  const days = useMemo(() => {
+    const start = addDays(date, -2);
+    return Array.from({ length: 12 }, (_, i) => addDays(start, i));
+  }, [date]);
+  return (
+    <div className="daystrip">
+      {days.map(d => (
+        <button className={"day" + (d === date ? " active" : "")} key={d} onClick={() => setDate(d)}>
+          <div className="pill">
+            <div className="num">{chipDate(d)}</div>
+            <div className="name">{weekdayOf(d).slice(0,3)}</div>
+          </div>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function LogSheet({ exercise, prescription, existing, readOnly, onClose, onDone, onDelete }) {
+  const [text, setText] = useState(existing ? existing.text : "");
+  const [expanded, setExpanded] = useState(false);
+  const notes = (exercise && exercise.notes) || "";
+  const longNotes = notes.length > 220;
+  return (
+    <React.Fragment>
+      <button className="scrim" onClick={onClose} aria-label="Close" />
+      <div className="sheet">
+        <div className="grab" />
+        <h2>{exercise ? exercise.name : ""}</h2>
+        {prescription ? (
+          <React.Fragment>
+            <div className="lbl">Prescription</div>
+            <p>{prescription}</p>
+          </React.Fragment>
+        ) : null}
+        {notes ? (
+          <React.Fragment>
+            <div className="lbl">Coaching Notes</div>
+            <p className={"notes" + (longNotes && !expanded ? " clamped" : "")}>{notes}</p>
+            {longNotes ? (
+              <button className="more" onClick={() => setExpanded(e => !e)}>
+                {expanded ? "Show less" : "Show more"}
+              </button>
+            ) : null}
+          </React.Fragment>
+        ) : null}
+        {!readOnly ? (
+          <React.Fragment>
+            <div className="lbl">Results</div>
+            <textarea
+              value={text}
+              placeholder="Weight, reps, how it went…"
+              onChange={e => setText(e.target.value)}
+            />
+            <button className="donebtn" onClick={() => onDone(text.trim())}>
+              Done ✓
+            </button>
+            {existing ? <button className="deletelink" onClick={onDelete}>Remove log</button> : null}
+          </React.Fragment>
+        ) : null}
+      </div>
+    </React.Fragment>
+  );
+}
+
+function ExercisePicker({ exercises, onClose, onPick }) {
+  const [q, setQ] = useState("");
+  const list = Object.entries(exercises)
+    .filter(([, ex]) => ex.name.toLowerCase().includes(q.toLowerCase()))
+    .sort((a,b) => a[1].name.localeCompare(b[1].name));
+  return (
+    <React.Fragment>
+      <button className="scrim" onClick={onClose} aria-label="Close" />
+      <div className="sheet">
+        <div className="grab" />
+        <h2>Add Exercise</h2>
+        <input className="picker-search" autoFocus placeholder="Search exercises…"
+          value={q} onChange={e => setQ(e.target.value)} />
+        <div className="picker-list">
+          {list.map(([id, ex]) => (
+            <button className="picker-row" key={id} onClick={() => onPick(id)}>{ex.name}</button>
+          ))}
+        </div>
+      </div>
+    </React.Fragment>
+  );
+}
+
+function Setup({ onSave }) {
+  const [val, setVal] = useState("");
+  return (
+    <div className="setup">
+      <h1>Gymlog Setup</h1>
+      <p>Paste your Airtable personal access token. It's stored only on this device — never in the repo or on any server.</p>
+      <p>Create it at <code>airtable.com/create/tokens</code>, scoped to the <strong>Training</strong> base only, with <code>data.records:read</code> and <code>data.records:write</code> — nothing else.</p>
+      <input
+        className="picker-search"
+        type="password"
+        placeholder="pat…"
+        value={val}
+        autoComplete="off"
+        autoCapitalize="off"
+        autoCorrect="off"
+        onChange={e => setVal(e.target.value)}
+      />
+      <button className="donebtn" disabled={!val.trim()} onClick={() => onSave(val.trim())}>
+        Save &amp; Start
+      </button>
+      <p style={{fontSize:"12.5px", color:"#8A8A8A"}}>If the token is ever revoked or wrong, the app returns to this screen automatically.</p>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
