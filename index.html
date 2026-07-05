@@ -294,6 +294,18 @@ const chipDate = s => { const d = fromIso(s); return `${d.getMonth()+1}/${d.getD
 // whose exact field names aren't guaranteed)
 const pick = (fields, names) => { for (const n of names) if (fields[n] !== undefined && fields[n] !== "") return fields[n]; return undefined; };
 
+// last N logs for an exercise, newest first. {Exercise} in a formula
+// resolves to the linked record's primary field (the exercise Name).
+async function fetchRecentLogs(exerciseName, n) {
+  const quoted = '"' + exerciseName.replace(/"/g, '\\"') + '"';
+  return atFetchAll(TABLES.logs, {
+    filterByFormula: `{Exercise} = ${quoted}`,
+    "sort[0][field]": "Log Date",
+    "sort[0][direction]": "desc",
+    maxRecords: String(n),
+  });
+}
+
 // ── App ──────────────────────────────────────────────────────────────
 function App() {
   const [token, setTokenState] = useState(() => {
@@ -385,6 +397,7 @@ function App() {
         date: pick(r.fields, ["Date","Race Date"]),
         place: pick(r.fields, ["City/State","Location","City","Place"]),
         status: pick(r.fields, ["Status"]),
+        type: pick(r.fields, ["Race Type"]),
         miles: pick(r.fields, ["Mi","Miles","Distance"]),
       })));
     } catch (e) {
@@ -583,7 +596,7 @@ function App() {
     const upcoming = sorted.filter(r => (r.date||"") >= t);
     const past = sorted.filter(r => (r.date||"") < t).reverse();
     const fmt = r => [
-      r.date ? headerDateShort(r.date) : null, r.place, r.status
+      r.date ? headerDateShort(r.date) : null, r.place, r.status, r.type
     ].filter(Boolean).join(" · ");
     screen = (
       <React.Fragment>
@@ -629,6 +642,8 @@ function App() {
           exercise={exercises[sheet.exerciseId]}
           prescription={sheet.prescription}
           readOnly={!!sheet.readOnly || nav.name === "exercises"}
+          showRecent={nav.name === "exercises" || nav.name === "day"}
+          excludeDate={nav.name === "day" ? date : null}
           existing={(logsByDate[date] || {})[sheet.exerciseId]}
           onClose={() => setSheet(null)}
           onDone={text => { writeLog(sheet.exerciseId, text || "Completed"); setSheet(null); }}
@@ -682,7 +697,45 @@ function DayStrip({ date, setDate }) {
   );
 }
 
-function LogSheet({ exercise, prescription, existing, readOnly, onClose, onDone, onDelete }) {
+function RecentResults({ exerciseName, excludeDate }) {
+  const [items, setItems] = useState(null); // null = loading, [] = none
+  useEffect(() => {
+    let live = true;
+    (async () => {
+      try {
+        const recs = await fetchRecentLogs(exerciseName, 5);
+        if (!live) return;
+        setItems(recs
+          .map(r => ({
+            date: r.fields["Log Date"] || "",
+            text: r.fields["Log Text"] || "Completed",
+          }))
+          .filter(it => !excludeDate || it.date !== excludeDate)
+          .slice(0, 4));
+      } catch (e) { if (live) setItems([]); }
+    })();
+    return () => { live = false; };
+  }, [exerciseName, excludeDate]);
+  return (
+    <React.Fragment>
+      <div className="lbl">Recent Results</div>
+      {items === null ? (
+        <p style={{color:"#B8B8B8", fontStyle:"italic"}}>Loading…</p>
+      ) : items.length === 0 ? (
+        <p style={{color:"#B8B8B8", fontStyle:"italic"}}>No logs yet.</p>
+      ) : items.map((it, i) => (
+        <div key={i} style={{padding:"8px 0", borderBottom: i < items.length-1 ? "1px solid var(--hairline)" : "none"}}>
+          <div style={{fontFamily:"var(--head)", fontWeight:600, fontSize:"10.5px", letterSpacing:"1.5px", textTransform:"uppercase", color:"var(--muted)"}}>
+            {it.date ? headerDateShort(it.date) : ""}
+          </div>
+          <p style={{marginTop:"2px"}}>{it.text}</p>
+        </div>
+      ))}
+    </React.Fragment>
+  );
+}
+
+function LogSheet({ exercise, prescription, existing, readOnly, showRecent, excludeDate, onClose, onDone, onDelete }) {
   const [text, setText] = useState(existing ? existing.text : "");
   const [expanded, setExpanded] = useState(false);
   const notes = (exercise && exercise.notes) || "";
@@ -724,6 +777,7 @@ function LogSheet({ exercise, prescription, existing, readOnly, onClose, onDone,
             {existing ? <button className="deletelink" onClick={onDelete}>Remove log</button> : null}
           </React.Fragment>
         ) : null}
+        {showRecent && exercise ? <RecentResults exerciseName={exercise.name} excludeDate={excludeDate} /> : null}
       </div>
     </React.Fragment>
   );
